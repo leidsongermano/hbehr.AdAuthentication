@@ -176,3 +176,6 @@ FakesAssemblies/
 /src/.vs/hbehr.AdAuthentication/v15/Server/sqlite3/storage.ide
 /src/.vs/hbehr.AdAuthentication/v15/Server/sqlite3/storage.ide-shm
 /src/.vs/hbehr.AdAuthentication/v15/Server/sqlite3/storage.ide-wal
+
+**/.vs
+**/*.ldif
