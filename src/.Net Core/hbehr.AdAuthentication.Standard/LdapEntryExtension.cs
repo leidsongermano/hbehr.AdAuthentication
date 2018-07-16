@@ -21,18 +21,17 @@
  * SOFTWARE.
  */
 
-using System.Configuration;
 using Novell.Directory.Ldap;
 
 namespace hbehr.AdAuthentication.Standard
 {
     internal static class LdapEntryExtension
     {
-        private static readonly LdapConfigurationSection LdapConfiguration = (LdapConfigurationSection)ConfigurationManager.GetSection("ldapConnectionSection/ldapConnection");
+        internal static LdapConfigurationSection LdapConfiguration => LdapConfigurationSection.Current();
 
         private static string GetProperty(this LdapEntry ldapEntry, string property)
         {
-            return ldapEntry.getAttribute(property).StringValue;
+            return ldapEntry.getAttribute(property)?.StringValue;
         }
 
         internal static string GetMail(this LdapEntry ldapEntry)

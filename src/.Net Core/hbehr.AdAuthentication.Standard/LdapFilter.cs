@@ -23,7 +23,7 @@
 
 namespace hbehr.AdAuthentication.Standard
 {
-    public class LdapPagination
+    public class LdapFilter
     {
         public int CurrentPage
         {
@@ -31,12 +31,16 @@ namespace hbehr.AdAuthentication.Standard
             set => TotalResults = (TotalPerPage * (value - 1)) + 1;
         }
 
+        public string SearchCriteria { get; set; }
+        public string SearchPath { get; set; }
+
         public string OrderBy { get; set; }
         public int TotalPerPage { get; set; }
         public int TotalResults { get; set; }
         public int ContentCount { get; set; }
+        public bool SinglePage { get; set; }
 
-        public LdapPagination()
+        public LdapFilter()
         {
             CurrentPage = 1;
             OrderBy = null;

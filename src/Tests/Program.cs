@@ -1,108 +1,107 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Configuration;
-using System.Text;
+using System.Linq;
 using hbehr.AdAuthentication.Standard;
-using Microsoft.Extensions.Configuration;
 using Novell.Directory.Ldap;
-using Novell.Directory.Ldap.Controls;
 
 namespace Tests
 {
     class Program
     {
-        private static List<string> exitCodes = new List<string> { "quit", "exit", "q", "" };
-
         static void Main(string[] args)
+        {
+            AdAuthenticator adAuthenticator = new AdAuthenticator();
+            ExecuteWithExceptionHandler("StartConnection", () =>
+            {
+                LdapConnection connection = adAuthenticator.StartConnection();
+                Console.WriteLine($"IsConnected: {connection.Connected}");
+                connection.Disconnect();
+                connection.Dispose();
+            });
+
+            ExecuteWithExceptionHandler("AuthenticateAndReturnUser", () =>
+            {
+                AdUser user = adAuthenticator.AuthenticateAndReturnUser(@"uid=admin,ou=system", "secret");
+                Console.WriteLine($"Result User: {user.Name}");
+                user.AdGroups.ToList().ForEach(group => Console.WriteLine($"Group: {group.Name ?? group.Code}"));
+            });
+
+            ExecuteWithExceptionHandler("GetAdGroups", () =>
+            {
+                IEnumerable<AdGroup> groups = adAuthenticator.GetAdGroups();
+                groups.ToList().ForEach(group => Console.WriteLine($"Group: {group.Name ?? group.Code}"));
+                Console.WriteLine($"Total: {groups.Count()}");
+            });
+
+            ExecuteWithExceptionHandler("GetAdGroupsWithLogin", () =>
+            {
+                IEnumerable<AdGroup> groups = adAuthenticator.GetAdGroups("admin");
+                groups.ToList().ForEach(group => Console.WriteLine($"Group: {group.Name ?? group.Code}"));
+            });
+
+            ExecuteWithExceptionHandler("GetAllUsers", () =>
+            {
+                IEnumerable<AdUser> users = adAuthenticator.GetAllUsers();
+                users.ToList().ForEach(user => Console.WriteLine($"user: {user.Name ?? user.Login}"));
+                Console.WriteLine($"Total: {users.Count()}");
+            });
+
+            ExecuteWithExceptionHandler("GetUserFromAdBy", () =>
+            {
+                AdUser user = adAuthenticator.GetUserFromAdBy("admin");
+                Console.WriteLine($"Result: {user.Name}");
+                user.AdGroups.ToList().ForEach(group => Console.WriteLine($"Group: {group.Name ?? group.Code}"));
+            });
+
+            ExecuteWithExceptionHandler("GetUsersByFilter", () =>
+            {
+                IEnumerable<AdUser> users = adAuthenticator.GetUsersByFilter("hook",2,out int total);
+                Console.WriteLine($"Total: {total}");
+                users.ToList().ForEach(user => Console.WriteLine($"user: {user.Name}"));
+            });
+
+            ExecuteWithExceptionHandler("GetUsersByNameFilter", () =>
+            {
+                IEnumerable<AdUser> users = adAuthenticator.GetUsersByNameFilter("hook", 2, out int total);
+                Console.WriteLine($"Total: {total}");
+                users.ToList().ForEach(user => Console.WriteLine($"user: {user.Name}"));
+            });
+
+            ExecuteWithExceptionHandler("SearchBy", () =>
+            {
+                LdapFilter filter = new LdapFilter
+                {
+                    SearchPath = adAuthenticator.GetLdapPath(),
+                    SearchCriteria = "(&(objectclass=person)(sAMAccountName=*h*))"
+                };
+
+                IEnumerable<LdapEntry> users = adAuthenticator.SearchBy(filter);
+                users.ToList().ForEach(user => Console.WriteLine($"user: {user.getAttribute("sAMAccountName")}"));
+            });
+
+            Console.ReadLine();
+        }
+
+        private static void ExecuteWithExceptionHandler(string actionName, Action action)
         {
             try
             {
-
-                AdAuthenticator adAuthenticator = new AdAuthenticator();
-
-                using (LdapConnection ldapConnection = new LdapConnection())
-                {
-                    LdapSearchConstraints constraints = ldapConnection.SearchConstraints;
-
-                    List<string> names = new List<string>();
-                    int totalResults = 1;
-                    int contentCount = -1;
-                    while (contentCount == -1 || totalResults < contentCount)
-                    {
-                        //Console.WriteLine(ldapConnection.GetSchemaDN());
-                        
-
-                        var ldapControls = new LdapControl[]
-                        {
-                            //new LdapSortControl(new LdapSortKey("sAMAccountName"), true),
-                            //new LdapVirtualListControl(startIndex: totalResults,beforeCount:0,afterCount:1000,contentCount:contentCount)
-                        };
-                        constraints.setControls(ldapControls);
-
-                        //ldapConnection.Constraints = constraints;
-
-                        LdapSearchResults searchResults = ldapConnection.Search(
-                            "DC=radixengrj,DC=matriz", LdapConnection.SCOPE_SUB,
-                            "(sAMAccountName=andre.melo)", null, false, constraints);
-
-
-                        while (searchResults.HasMore())
-                        {
-                            try
-                            {
-                                LdapEntry entry = searchResults.Next();
-                                names.Add(entry.getAttribute("sAMAccountName").StringValue);
-                                Console.WriteLine(
-                                    $@"{totalResults++} - {entry.getAttribute("sAMAccountName")}");
-
-
-                            }
-                            catch (LdapException ldapException)
-                            {
-                                if (!(ldapException is LdapReferralException))
-                                {
-                                    Console.WriteLine("Search stopped with exception " + ldapException);
-                                    break;
-                                }
-                            }
-                            catch (Exception exception)
-                            {
-                                Console.WriteLine($"[ERRO] {exception.Message}");
-                            }
-                        }
-
-                        // Server should send back a control irrespective of the 
-                        // status of the search request
-                        LdapControl[] controls = searchResults.ResponseControls;
-                        if (controls == null)
-                        {
-                            Console.WriteLine("No controls returned");
-                            contentCount = totalResults;
-                        }
-                        else
-                        {
-                            // Multiple controls could have been returned
-                            foreach (LdapControl control in controls)
-                            {
-                                if (control is LdapVirtualListResponse)
-                                {
-                                    contentCount = ((LdapVirtualListResponse)control).ContentCount;
-                                }
-                            }
-                        }
-
-                    };
-
-                    /* We are done - disconnect */
-                    if (ldapConnection.Connected)
-                        ldapConnection.Disconnect();
-
-                    Console.WriteLine(names.Count);
-                }
+                Console.WriteLine($"STARTING [{actionName}] ...");
+                action();
+                Console.WriteLine($"SUCCESS [{actionName}]!");
             }
-            catch (Exception e)
+            catch (LdapException ldapException)
             {
-                Console.WriteLine(e.Message);
+                Console.WriteLine(
+                    $"ERROR: [{actionName}] {ldapException.Message} - {ldapException.Cause?.Message}");
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine($"ERROR: [{actionName}] {exception.Message}");
+            }
+            finally
+            {
+                Console.WriteLine();
             }
         }
     }

@@ -23,7 +23,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Configuration;
 using System.Linq;
 using Novell.Directory.Ldap;
 using Novell.Directory.Ldap.Controls;
@@ -32,19 +31,11 @@ namespace hbehr.AdAuthentication.Standard
 {
     public class AdAuthenticator
     {
-        public AdAuthenticator()
-        {
-            string sectionClass = nameof(LdapConfigurationSection);
-            string section = Char.ToLowerInvariant(sectionClass[0]) + sectionClass.Substring(1);
-            LdapConfiguration = (LdapConfigurationSection)ConfigurationManager.GetSection($"{section}/{section.Replace("Section", string.Empty)}");
-        }
+        internal LdapConfigurationSection LdapConfiguration => LdapConfigurationSection.Current();
 
-        internal LdapConfigurationSection LdapConfiguration { get; }
-
-        public AdAuthenticator ConfigureSetLdapHost(string ldapHost)
+        public string GetLdapPath()
         {
-            LdapConfiguration.Host = ldapHost;
-            return this;
+            return LdapConfiguration.Path;
         }
 
         public AdUser AuthenticateAndReturnUser(string login, string password)
@@ -54,7 +45,18 @@ namespace hbehr.AdAuthentication.Standard
                 .ValidateParameters(login, password)
                 .ValidateUserPasswordAtAd(login, password);
 
+            login = RemoveDomainFromLogin(login);
+
             return GetUserFromAdBy(login);
+        }
+
+        private static string RemoveDomainFromLogin(string login)
+        {
+            if (login.Contains(@"\"))
+                login = login.Split('\\').Last();
+            if (login.Contains("@"))
+                login = login.Split('@').First();
+            return login;
         }
 
         public LdapConnection StartConnection()
@@ -66,26 +68,32 @@ namespace hbehr.AdAuthentication.Standard
             return ldapConnection;
         }
 
-        public IEnumerable<LdapEntry> SearchBy(string searchPath, string searchCriteria, LdapPagination pageInfo = null)
+        public IEnumerable<LdapEntry> SearchBy(LdapFilter filter)
         {
             List<LdapEntry> results = new List<LdapEntry>();
-            if (pageInfo == null)
-                pageInfo = new LdapPagination();
 
             using (LdapConnection ldapConnection = StartConnection())
             {
-                LdapSearchConstraints constraints = ldapConnection.SearchConstraints;
-                while (pageInfo.TotalResults == -1 || pageInfo.TotalResults < pageInfo.ContentCount)
+                if (filter.TotalResults > 1)
                 {
-                    SetLdapControls(pageInfo, constraints);
+                    LdapFilter countFilter = new LdapFilter
+                    {
+                        OrderBy = filter.OrderBy,
+                        TotalPerPage = 1,
+                        SearchCriteria = filter.SearchCriteria,
+                        SearchPath = filter.SearchPath
+                    };
+                    ExecuteSearch(countFilter, ldapConnection, (searchResults) => searchResults.Count());
+                    filter.ContentCount = countFilter.ContentCount;
+                }
 
-                    LdapSearchResults searchResults = ldapConnection.Search(
-                        searchPath, LdapConnection.SCOPE_SUB,
-                        searchCriteria, null, false, constraints);
+                while (filter.ContentCount == -1 || filter.TotalResults < filter.ContentCount)
+                {
+                    ExecuteSearch(filter, ldapConnection, (searchResults) => ProcessResults(searchResults, results));
 
-                    ProcessResults(searchResults, results);
-
-                    TotalResultsCallback(pageInfo, searchResults);
+                    filter.TotalResults = results.Count;
+                    if (filter.SinglePage)
+                        break;
                 }
 
                 if (ldapConnection.Connected)
@@ -93,6 +101,19 @@ namespace hbehr.AdAuthentication.Standard
             }
 
             return results;
+        }
+
+        private void ExecuteSearch(LdapFilter filter, LdapConnection ldapConnection, Action<LdapSearchResults> middleAction)
+        {
+            LdapSearchConstraints constraints = ldapConnection.SearchConstraints;
+            SetLdapControls(filter, constraints);
+
+            LdapSearchResults searchResults = ldapConnection.Search(
+                filter.SearchPath, LdapConnection.SCOPE_SUB,
+                filter.SearchCriteria, null, false, constraints);
+
+            middleAction(searchResults);
+            TotalResultsCallback(filter, searchResults);
         }
 
         private static void ProcessResults(LdapSearchResults searchResults, ICollection<LdapEntry> results)
@@ -114,7 +135,7 @@ namespace hbehr.AdAuthentication.Standard
             }
         }
 
-        private static void TotalResultsCallback(LdapPagination pageInfo, LdapSearchResults searchResults)
+        private static void TotalResultsCallback(LdapFilter pageInfo, LdapSearchResults searchResults)
         {
             LdapControl[] controls = searchResults.ResponseControls;
             if (controls == null)
@@ -133,12 +154,12 @@ namespace hbehr.AdAuthentication.Standard
             }
         }
 
-        private void SetLdapControls(LdapPagination pageInfo, LdapSearchConstraints constraints)
+        private void SetLdapControls(LdapFilter pageInfo, LdapSearchConstraints constraints)
         {
             LdapControl[] ldapControls = {
                 new LdapSortControl(new LdapSortKey(pageInfo.OrderBy ?? LdapConfiguration.Attribute.UniqueName),
                     true),
-                new LdapVirtualListControl(pageInfo.TotalResults, 0, pageInfo.TotalPerPage, pageInfo.ContentCount)
+                new LdapVirtualListControl(pageInfo.TotalResults, 0, pageInfo.TotalPerPage-1, pageInfo.ContentCount)
             };
             constraints.setControls(ldapControls);
         }
@@ -146,16 +167,22 @@ namespace hbehr.AdAuthentication.Standard
         public IEnumerable<AdGroup> GetAdGroups(string loginWithPath = null)
         {
             new Validator(this).ValidateConfiguration();
-            string searchCriteria = $"(objectclass={LdapConfiguration.ObjectClass.Group})";
+            string searchCriteria = $"(objectClass={LdapConfiguration.ObjectClass.Group})";
             if (!string.IsNullOrWhiteSpace(loginWithPath))
                 searchCriteria = $"(&{searchCriteria}({LdapConfiguration.Attribute.GroupMember}={loginWithPath}))";
 
-            IEnumerable<LdapEntry> results = SearchBy(LdapConfiguration.Path, searchCriteria);
+            LdapFilter filter = new LdapFilter
+            {
+                SearchPath = LdapConfiguration.Path,
+                SearchCriteria = searchCriteria
+            };
+
+            IEnumerable<LdapEntry> results = SearchBy(filter);
 
             return results.Select(found => new AdGroup
             {
-                Code = found.getAttribute(LdapConfiguration.Attribute.UniqueName).StringValue,
-                Name = found.getAttribute(LdapConfiguration.Attribute.DisplayName).StringValue
+                Code = found.GetUniqueName(),
+                Name = found.GetDisplayName()
             });
         }
 
@@ -163,8 +190,18 @@ namespace hbehr.AdAuthentication.Standard
         {
             new Validator(this).ValidateConfiguration();
             string searchCriteria =
-                $"(&(objectClass={LdapConfiguration.ObjectClass.User})({LdapConfiguration.Attribute.UniqueName}=*{login}*))";
-            LdapEntry userEntry = SearchBy(LdapConfiguration.Path, searchCriteria).FirstOrDefault();
+                $"(&(objectClass={LdapConfiguration.ObjectClass.User})({LdapConfiguration.Attribute.UniqueName}={login}))";
+
+            LdapFilter filter = new LdapFilter
+            {
+                SearchPath = LdapConfiguration.Path,
+                SearchCriteria = searchCriteria
+            };
+            LdapEntry userEntry = SearchBy(filter).FirstOrDefault();
+
+            if (userEntry == null)
+                throw new Exception(
+                    $"User {login} not found on {LdapConfiguration.Path} using ObjectClass {LdapConfiguration.ObjectClass.User} and uniqueName {LdapConfiguration.Attribute.UniqueName}");
 
             return new AdUser(userEntry, GetAdGroups(userEntry.GetDistinguishedName()));
         }
@@ -174,41 +211,52 @@ namespace hbehr.AdAuthentication.Standard
             new Validator(this).ValidateConfiguration();
             string searchCriteria = $"(objectclass={LdapConfiguration.ObjectClass.User})";
 
-            IEnumerable<LdapEntry> results = SearchBy(LdapConfiguration.Path, searchCriteria);
+            LdapFilter filter = new LdapFilter
+            {
+                SearchPath = LdapConfiguration.Path,
+                SearchCriteria = searchCriteria
+            };
+            IEnumerable<LdapEntry> results = SearchBy(filter);
 
             return results.Select(found => new AdUser(found));
         }
 
         public IEnumerable<AdUser> GetUsersByFilter(string text, int page, out int total, int itemsPerPage = 5)
         {
-            LdapPagination pageInfo = new LdapPagination
-            {
-                TotalPerPage = itemsPerPage,
-                CurrentPage = page
-            };
-
             string searchCriteria =
                 $"(&(objectClass={LdapConfiguration.ObjectClass.User})({LdapConfiguration.Attribute.UniqueName}=*{text}*))";
-            IEnumerable<LdapEntry> results = SearchBy(LdapConfiguration.Path, searchCriteria, pageInfo);
 
-            total = pageInfo.ContentCount;
+            LdapFilter filter = new LdapFilter
+            {
+                SearchPath = LdapConfiguration.Path,
+                SearchCriteria = searchCriteria,
+                TotalPerPage = itemsPerPage,
+                CurrentPage = page,
+                SinglePage = true
+            };
+            IEnumerable<LdapEntry> results = SearchBy(filter);
+
+            total = filter.ContentCount;
             return results.Select(found => new AdUser(found));
         }
 
         public IEnumerable<AdUser> GetUsersByNameFilter(string text, int page, out int total, int itemsPerPage = 5)
         {
-            LdapPagination pageInfo = new LdapPagination
-            {
-                TotalPerPage = itemsPerPage,
-                CurrentPage = page,
-                OrderBy = LdapConfiguration.Attribute.DisplayName
-            };
-
             string searchCriteria =
                 $"(&(objectClass={LdapConfiguration.ObjectClass.User})({LdapConfiguration.Attribute.DisplayName}=*{text}*))";
-            IEnumerable<LdapEntry> results = SearchBy(LdapConfiguration.Path, searchCriteria, pageInfo);
 
-            total = pageInfo.ContentCount;
+            LdapFilter filter = new LdapFilter
+            {
+                SearchPath = LdapConfiguration.Path,
+                SearchCriteria = searchCriteria,
+                TotalPerPage = itemsPerPage,
+                CurrentPage = page,
+                OrderBy = LdapConfiguration.Attribute.DisplayName,
+                SinglePage = true
+            };
+            IEnumerable<LdapEntry> results = SearchBy(filter);
+
+            total = filter.ContentCount;
             return results.Select(found => new AdUser(found));
         }
     }

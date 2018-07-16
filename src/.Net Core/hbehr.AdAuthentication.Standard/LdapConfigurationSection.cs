@@ -82,5 +82,21 @@ namespace hbehr.AdAuthentication.Standard
             get => (LdapCustomAttributes)this["attributes"];
             set => this["attributes"] = value;
         }
+
+        private static LdapConfigurationSection _current;
+
+        public static LdapConfigurationSection Current()
+        {
+            if (_current == null)
+            {
+                const string sectionClass = nameof(LdapConfigurationSection);
+                string section = char.ToLowerInvariant(sectionClass[0]) + sectionClass.Substring(1);
+                _current =
+                    (LdapConfigurationSection) ConfigurationManager.GetSection(
+                        $"{section}/{section.Replace("Section", string.Empty)}");
+            }
+
+            return _current;
+        }
     }
 }
