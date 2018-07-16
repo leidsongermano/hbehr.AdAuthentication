@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\.Net Core\hbehr.AdAuthentication.Standard\hbehr.AdAuthentication.Standard.csproj" />
+    <ProjectReference Include="..\hbehr.AdAuthentication.Standard\hbehr.AdAuthentication.Standard.csproj" />
   </ItemGroup>
 
 </Project>

@@ -7,9 +7,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "hbehr.AdAuthentication", ".
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "hbehr.AdAuthentication.UnitTest", ".Net Framework\hbehr.AdAuthentication.UnitTest\hbehr.AdAuthentication.UnitTest.csproj", "{F6550387-D779-4CEB-B0CE-6820776669CF}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tests", "Tests\Tests.csproj", "{18348AD9-B497-4BE7-ABEF-25EEE859CB8A}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "hbehr.AdAuthentication.Standard", ".Net Core\hbehr.AdAuthentication.Standard\hbehr.AdAuthentication.Standard.csproj", "{9FA652A4-1464-47DE-92A6-8B05DEABDD3C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{2FDBD2CC-4127-4DBA-BEB8-912EE3F8745D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "hbehr.AdAuthentication.ConsoleTest", ".Net Core\hbehr.AdAuthentication.ConsoleTest\hbehr.AdAuthentication.ConsoleTest.csproj", "{E7B317D8-14DD-46A2-A21F-BD7BCCBAD816}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -45,18 +47,6 @@ Global
 		{F6550387-D779-4CEB-B0CE-6820776669CF}.Release|x64.Build.0 = Release|Any CPU
 		{F6550387-D779-4CEB-B0CE-6820776669CF}.Release|x86.ActiveCfg = Release|Any CPU
 		{F6550387-D779-4CEB-B0CE-6820776669CF}.Release|x86.Build.0 = Release|Any CPU
-		{18348AD9-B497-4BE7-ABEF-25EEE859CB8A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{18348AD9-B497-4BE7-ABEF-25EEE859CB8A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{18348AD9-B497-4BE7-ABEF-25EEE859CB8A}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{18348AD9-B497-4BE7-ABEF-25EEE859CB8A}.Debug|x64.Build.0 = Debug|Any CPU
-		{18348AD9-B497-4BE7-ABEF-25EEE859CB8A}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{18348AD9-B497-4BE7-ABEF-25EEE859CB8A}.Debug|x86.Build.0 = Debug|Any CPU
-		{18348AD9-B497-4BE7-ABEF-25EEE859CB8A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{18348AD9-B497-4BE7-ABEF-25EEE859CB8A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{18348AD9-B497-4BE7-ABEF-25EEE859CB8A}.Release|x64.ActiveCfg = Release|Any CPU
-		{18348AD9-B497-4BE7-ABEF-25EEE859CB8A}.Release|x64.Build.0 = Release|Any CPU
-		{18348AD9-B497-4BE7-ABEF-25EEE859CB8A}.Release|x86.ActiveCfg = Release|Any CPU
-		{18348AD9-B497-4BE7-ABEF-25EEE859CB8A}.Release|x86.Build.0 = Release|Any CPU
 		{9FA652A4-1464-47DE-92A6-8B05DEABDD3C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{9FA652A4-1464-47DE-92A6-8B05DEABDD3C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9FA652A4-1464-47DE-92A6-8B05DEABDD3C}.Debug|x64.ActiveCfg = Debug|Any CPU
@@ -69,6 +59,18 @@ Global
 		{9FA652A4-1464-47DE-92A6-8B05DEABDD3C}.Release|x64.Build.0 = Release|Any CPU
 		{9FA652A4-1464-47DE-92A6-8B05DEABDD3C}.Release|x86.ActiveCfg = Release|Any CPU
 		{9FA652A4-1464-47DE-92A6-8B05DEABDD3C}.Release|x86.Build.0 = Release|Any CPU
+		{E7B317D8-14DD-46A2-A21F-BD7BCCBAD816}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E7B317D8-14DD-46A2-A21F-BD7BCCBAD816}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E7B317D8-14DD-46A2-A21F-BD7BCCBAD816}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{E7B317D8-14DD-46A2-A21F-BD7BCCBAD816}.Debug|x64.Build.0 = Debug|Any CPU
+		{E7B317D8-14DD-46A2-A21F-BD7BCCBAD816}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{E7B317D8-14DD-46A2-A21F-BD7BCCBAD816}.Debug|x86.Build.0 = Debug|Any CPU
+		{E7B317D8-14DD-46A2-A21F-BD7BCCBAD816}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E7B317D8-14DD-46A2-A21F-BD7BCCBAD816}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E7B317D8-14DD-46A2-A21F-BD7BCCBAD816}.Release|x64.ActiveCfg = Release|Any CPU
+		{E7B317D8-14DD-46A2-A21F-BD7BCCBAD816}.Release|x64.Build.0 = Release|Any CPU
+		{E7B317D8-14DD-46A2-A21F-BD7BCCBAD816}.Release|x86.ActiveCfg = Release|Any CPU
+		{E7B317D8-14DD-46A2-A21F-BD7BCCBAD816}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

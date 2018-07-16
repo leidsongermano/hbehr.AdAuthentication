@@ -4,7 +4,7 @@ using System.Linq;
 using hbehr.AdAuthentication.Standard;
 using Novell.Directory.Ldap;
 
-namespace Tests
+namespace hbehr.AdAuthentication.ConsoleTest
 {
     class Program
     {
