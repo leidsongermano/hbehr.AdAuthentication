@@ -21,8 +21,8 @@ Configure in code
 
 *Configurar pelo código*,
 ```C#
-string ldapPath = "LDAP://DC=radixengrj,DC=matriz";
-string ldapDomain = "radixengrj";
+string ldapPath = "LDAP://DC=domain,DC=com";
+string ldapDomain = "domain";
 adAuthenticator
 	.ConfigureSetLdapPath(ldapPath)
 	.ConfigureLdapDomain(ldapDomain);
@@ -33,8 +33,8 @@ Configure in .config, just add the folowing keys to the LdapPath/Domain
 ```xml
 <configuration>
   <appSettings>
-    <add key="LdapPath" value="LDAP://DC=radixengrj,DC=matriz" />
-    <add key="LdapDomain" value="radixengrj" />
+    <add key="LdapPath" value="LDAP://DC=domain,DC=com" />
+    <add key="LdapDomain" value="domain" />
   </appSettings>
 </configuration>
 ```
@@ -83,8 +83,8 @@ Supports *method-chain* :
 
 *Suporta method-chain:*
 ```C#
-string ldapPath = "LDAP://DC=radixengrj,DC=matriz";
-string ldapDomain = "radixengrj";
+string ldapPath = "LDAP://DC=domain,DC=com";
+string ldapDomain = "domain";
 AdUser adUser = new AdAuthenticator()
 	.ConfigureSetLdapPath(ldapPath)
 	.ConfigureLdapDomain(ldapDomain)
